@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MaleQuestions from './MaleQuestions';
 import FemaleQuestions from './FemaleQuestions';
 import { generateImage, fetchOutfitData, parseDescription } from '../utils/gptWrapper';
 import './OutfitGenerator.css';
+import { auth, db } from '../firebase-config';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { collection, addDoc } from 'firebase/firestore';
 
 const OutfitGenerator = () => {
     const [gender, setGender] = useState('');
@@ -15,6 +18,18 @@ const OutfitGenerator = () => {
     const [error, setError] = useState(null);
     const [generatedOutfit, setGeneratedOutfit] = useState(null);
     const [isOutfitVisible, setIsOutfitVisible] = useState(false);
+    const [user, setUser] = useState(null);
+
+
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            setUser(user);
+            console.log('Current user:', user);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -115,6 +130,58 @@ const OutfitGenerator = () => {
         setIsOutfitVisible(false);
         if (generatedOutfit?.imageUrl === 'pending') {
             setGeneratedOutfit(null);
+        }
+    };
+
+    const handleLogin = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error('Login error:', error);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
+    const handleSaveOutfit = async () => {
+        if (!generatedOutfit) {
+            alert('Please generate an outfit first!');
+            return;
+        }
+
+        try {
+            // If user is not logged in, prompt for Google sign-in
+            if (!user) {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            }
+
+            // Save the outfit to Firestore
+            const outfitData = {
+                userId: auth.currentUser.uid,
+                outfit: generatedOutfit, // The generated outfit
+                preferences: {
+                    gender,
+                    vibe,
+                    comfortLevel,
+                    additionalDescription: userInput
+                },
+                createdAt: new Date(),
+            };
+
+            const docRef = await addDoc(collection(db, 'outfits'), outfitData);
+            console.log('Outfit saved with ID:', docRef.id);
+            alert('Outfit saved successfully! 🎉');
+        } catch (error) {
+            console.error('Error saving outfit:', error);
+            alert('Failed to save outfit: ' + error.message);
         }
     };
 
@@ -238,9 +305,28 @@ const OutfitGenerator = () => {
                                 </button>
                             </div>
                         </div>
+
+                        <button
+                            className="save-button"
+                            onClick={handleSaveOutfit}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Saving...' : user ? 'Save Outfit' : 'Sign in to Save'}
+                        </button>
                     </div>
                 </div>
             )}
+
+            <div style={{ marginTop: '20px' }}>
+                {!user ? (
+                    <button onClick={handleLogin}>Login with Google</button>
+                ) : (
+                    <div>
+                        <p>Welcome, {user.email}!</p>
+                        <button onClick={handleLogout}>Logout</button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

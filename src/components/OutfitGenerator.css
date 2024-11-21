@@ -254,3 +254,50 @@ select:focus {
 .shop-button:hover {
     background-color: #1976D2; /* Darker blue on hover */
 }
+
+.save-outfit-section {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.save-button {
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.save-button:hover {
+  background-color: #45a049;
+}
+
+.save-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.save-status {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.save-status.success {
+  background-color: #dff0d8;
+  color: #3c763d;
+}
+
+.save-status.error {
+  background-color: #f2dede;
+  color: #a94442;
+}
+
+.user-status {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
