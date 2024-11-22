@@ -4,8 +4,9 @@ import FemaleQuestions from './FemaleQuestions';
 import { generateImage, fetchOutfitData, parseDescription } from '../utils/gptWrapper';
 import './OutfitGenerator.css';
 import { auth, db } from '../firebase-config';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { collection, addDoc } from 'firebase/firestore';
+import SavedOutfits from './SavedOutfits';
 
 const OutfitGenerator = () => {
     const [gender, setGender] = useState('');
@@ -19,6 +20,7 @@ const OutfitGenerator = () => {
     const [generatedOutfit, setGeneratedOutfit] = useState(null);
     const [isOutfitVisible, setIsOutfitVisible] = useState(false);
     const [user, setUser] = useState(null);
+    const [showSavedOutfits, setShowSavedOutfits] = useState(false);
 
 
 
@@ -46,7 +48,8 @@ const OutfitGenerator = () => {
         try {
             // Construct the prompt dynamically
             const promptParts = [
-                `You are a personal stylist helping the user build an outfit based on the following details:`,
+                `You are a highly creative personal stylist and AI specializing in crafting striking, modern, and cohesive outfits based on user input. Your task is to generate well-described outfits that are clear for modeling purposes and helpful for shopping recommendations.`,
+                `Details provided by the user include:`,
                 gender ? `- Gender: ${gender}` : '',
                 vibe ? `- Vibe: ${vibe}` : '',
                 comfortLevel ? `- Comfort Level: ${comfortLevel}` : '',
@@ -54,16 +57,16 @@ const OutfitGenerator = () => {
                 focus ? `- Focus: ${focus}` : '',
                 userInput ? `- Additional Description: ${userInput}` : '',
                 `\nProvide a response in EXACTLY this format (maintain the exact labels and structure):`,
-                `Title: [Outfit Title]`,
-                `Top: [Main piece description]`,
-                `Short Top Description: [Brief, specific description for shopping]`,
-                `Bottom: [Main piece description]`,
-                `Short Bottom Description: [Brief, specific description for shopping]`,
-                `Shoes: [Main piece description]`,
-                `Short Shoes Description: [Brief, specific description for shopping]`,
-                `Accessory: [Main piece description]`,
-                `Short Accessory Description: [Brief, specific description for shopping]`,
-                `Image Description: [A clear, concise description of the complete outfit for image generation. Include main pieces, colors, and how they work together.]`
+                `Title: [A creative and stylish outfit name that reflects the overall vibe and mood of the ensemble. Examples: "Urban Explorer Chic" or "Elegant Autumn Stroll"]`,
+                `Top: [A detailed description of the main top piece, including fabric, color, fit, and any defining features like patterns or necklines. Example: "A fitted white cotton blouse with a ruffled neckline and balloon sleeves."]`,
+                `Short Top Description: [A brief, Amazon-search-friendly description. Example: "White cotton blouse with ruffled neckline"]`,
+                `Bottom: [A detailed description of the main bottom piece, including style, fabric, fit, and color. Example: "High-waisted navy blue tailored trousers with a subtle pinstripe."]`,
+                `Short Bottom Description: [A brief, Amazon-search-friendly description. Example: "Navy high-waisted pinstripe trousers"]`,
+                `Shoes: [A detailed description of the shoes, focusing on type, color, and material. Example: "Black leather ankle boots with a chunky heel."]`,
+                `Short Shoes Description: [A brief, Amazon-search-friendly description. Example: "Black leather chunky heel ankle boots"]`,
+                `Accessory: [A detailed description of the accessory, including type, color, material, and how it complements the outfit. Example: "A silver statement necklace with intricate floral designs."]`,
+                `Short Accessory Description: [A brief, Amazon-search-friendly description. Example: "Silver floral statement necklace"]`,
+                `Image Description: [A clear, concise description of the complete outfit for image generation. Describe the colors, materials, and how the pieces come together to create a cohesive look. Example: "A crisp white blouse paired with navy pinstripe trousers, black leather ankle boots, and a silver statement necklace, creating a professional yet chic ensemble."]`
             ];
 
             const prompt = promptParts.filter(part => part).join('\n');
@@ -133,55 +136,89 @@ const OutfitGenerator = () => {
         }
     };
 
-    const handleLogin = async () => {
+    const handleGoogleSignIn = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            console.log('Successfully signed in:', result.user);
+            return result.user;
         } catch (error) {
-            console.error('Login error:', error);
-        }
-    };
-
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-        } catch (error) {
-            console.error('Logout error:', error);
+            console.error('Error signing in with Google:', error);
+            setError('Failed to sign in with Google');
+            return null;
         }
     };
 
     const handleSaveOutfit = async () => {
-        if (!generatedOutfit) {
-            alert('Please generate an outfit first!');
-            return;
-        }
-
         try {
-            // If user is not logged in, prompt for Google sign-in
+            setIsLoading(true);
+            console.log('Starting save process...');
+            
             if (!user) {
-                const provider = new GoogleAuthProvider();
-                await signInWithPopup(auth, provider);
+                console.log('No user, attempting sign in...');
+                const signedInUser = await handleGoogleSignIn();
+                if (!signedInUser) {
+                    throw new Error('Please sign in to save outfits');
+                }
             }
 
-            // Save the outfit to Firestore
-            const outfitData = {
-                userId: auth.currentUser.uid,
-                outfit: generatedOutfit, // The generated outfit
-                preferences: {
-                    gender,
-                    vibe,
-                    comfortLevel,
-                    additionalDescription: userInput
+            if (!generatedOutfit) {
+                throw new Error('No outfit to save');
+            }
+
+            // Create a prompt for the image generation
+            const imagePrompt = `Fashion outfit consisting of: ${generatedOutfit.components.top}, ${generatedOutfit.components.bottom}, ${generatedOutfit.components.shoes}, and ${generatedOutfit.components.accessory}. Professional fashion photography style.`;
+
+            // Generate image using DALL-E
+            const response = await fetch('https://api.openai.com/v1/images/generations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
                 },
-                createdAt: new Date(),
+                body: JSON.stringify({
+                    prompt: imagePrompt,
+                    n: 1,
+                    size: "512x512",
+                    response_format: "url"
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate image');
+            }
+
+            const imageData = await response.json();
+            const imageUrl = imageData.data[0].url;
+
+            // Prepare the outfit data with the image URL
+            const outfitData = {
+                userId: user.uid,
+                title: generatedOutfit.title,
+                components: {
+                    top: generatedOutfit.components.top,
+                    bottom: generatedOutfit.components.bottom,
+                    shoes: generatedOutfit.components.shoes,
+                    accessory: generatedOutfit.components.accessory
+                },
+                imageUrl: imageUrl, // Add the generated image URL
+                createdAt: new Date().toISOString()
             };
 
-            const docRef = await addDoc(collection(db, 'outfits'), outfitData);
+            console.log('Saving outfit data:', outfitData);
+
+            // Save to Firebase
+            const docRef = await addDoc(collection(db, 'savedOutfits'), outfitData);
             console.log('Outfit saved with ID:', docRef.id);
+            
+            // Show success message
             alert('Outfit saved successfully! 🎉');
+            
         } catch (error) {
-            console.error('Error saving outfit:', error);
-            alert('Failed to save outfit: ' + error.message);
+            console.error("Error saving outfit:", error);
+            setError(error.message || "Failed to save outfit");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -199,7 +236,7 @@ const OutfitGenerator = () => {
                             <span className="user-name">{user.displayName}</span>
                             <button 
                                 className="logout-button"
-                                onClick={handleLogout}
+                                onClick={() => auth.signOut()}
                             >
                                 Sign Out
                             </button>
@@ -208,7 +245,7 @@ const OutfitGenerator = () => {
                 ) : (
                     <button 
                         className="login-button"
-                        onClick={handleLogin}
+                        onClick={handleGoogleSignIn}
                     >
                         <img 
                             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
@@ -274,8 +311,30 @@ const OutfitGenerator = () => {
                     onChange={(e) => setUserInput(e.target.value)}
                 />
 
-                <button type="submit" className="generate-button" disabled={isLoading}>
+                <button 
+                    type="submit" 
+                    className="generate-button" 
+                    disabled={isLoading}
+                >
                     {isLoading ? 'Generating...' : 'Generate Outfit'}
+                </button>
+
+                <button 
+                    type="button"
+                    className="view-saved-button"
+                    onClick={() => setShowSavedOutfits(true)}
+                    style={{
+                        marginTop: '1rem',
+                        padding: '10px 20px',
+                        backgroundColor: '#4CAF50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        width: '100%'
+                    }}
+                >
+                    View Saved Outfits
                 </button>
             </form>
 
@@ -348,6 +407,13 @@ const OutfitGenerator = () => {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {showSavedOutfits && (
+                <SavedOutfits 
+                    user={user} 
+                    onClose={() => setShowSavedOutfits(false)}
+                />
             )}
         </div>
     );
