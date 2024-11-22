@@ -187,6 +187,39 @@ const OutfitGenerator = () => {
 
     return (
         <div className="container">
+            <div className="auth-container">
+                {user ? (
+                    <div className="user-profile">
+                        <img 
+                            src={user.photoURL} 
+                            alt="Profile" 
+                            className="profile-image"
+                        />
+                        <div className="user-info">
+                            <span className="user-name">{user.displayName}</span>
+                            <button 
+                                className="logout-button"
+                                onClick={handleLogout}
+                            >
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <button 
+                        className="login-button"
+                        onClick={handleLogin}
+                    >
+                        <img 
+                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                            alt="Google" 
+                            className="google-icon"
+                        />
+                        Sign in with Google
+                    </button>
+                )}
+            </div>
+
             <div className="header">
                 <h1 className="title">Outfitz <span className="logo">🛍️</span></h1>
                 <p className="subtitle">Enter your style for any occasion and generate an outfit.</p>
@@ -316,17 +349,6 @@ const OutfitGenerator = () => {
                     </div>
                 </div>
             )}
-
-            <div style={{ marginTop: '20px' }}>
-                {!user ? (
-                    <button onClick={handleLogin}>Login with Google</button>
-                ) : (
-                    <div>
-                        <p>Welcome, {user.email}!</p>
-                        <button onClick={handleLogout}>Logout</button>
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
