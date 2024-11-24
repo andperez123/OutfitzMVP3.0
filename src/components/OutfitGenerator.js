@@ -194,6 +194,7 @@ const OutfitGenerator = () => {
                 <OutfitModal 
                     generatedOutfit={generatedOutfit}
                     handleCloseModal={handleCloseModal}
+                    gender={gender}
                 />
             )}
         </div>
