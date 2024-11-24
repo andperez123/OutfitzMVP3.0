@@ -8,8 +8,28 @@ import { auth} from '../firebase-config';
 import { useProfile } from '../hooks/useProfile';
 import { useOutfitGeneration } from '../hooks/useOutfitGeneration';
 
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
 
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
 
+    componentDidCatch(error, errorInfo) {
+        console.error('Error:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return <div>Something went wrong. Please try again.</div>;
+        }
+
+        return this.props.children;
+    }
+}
 
 const OutfitGenerator = () => {
     // Form state
@@ -99,7 +119,7 @@ const OutfitGenerator = () => {
             </div>
 
             <div className="header">
-                <h1 className="title">Outfitz <span className="logo">🛍️</span></h1>
+                <h1 className="title">Outfitz <span role="img" aria-label="sparkle">✨</span></h1>
                 <p className="subtitle">Enter your style for any occasion and generate an outfit.</p>
             </div>
 
@@ -191,11 +211,13 @@ const OutfitGenerator = () => {
             {error && <div className="alert">{error}</div>}
 
             {isOutfitVisible && generatedOutfit && (
-                <OutfitModal 
-                    generatedOutfit={generatedOutfit}
-                    handleCloseModal={handleCloseModal}
-                    gender={gender}
-                />
+                <ErrorBoundary>
+                    <OutfitModal 
+                        generatedOutfit={generatedOutfit}
+                        handleCloseModal={handleCloseModal}
+                        gender={gender}
+                    />
+                </ErrorBoundary>
             )}
         </div>
     );
