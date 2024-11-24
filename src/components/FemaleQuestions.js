@@ -1,103 +1,53 @@
 import React from 'react';
 
 const FemaleQuestions = ({
-    vibe,
     setVibe,
-    comfortLevel,
     setComfortLevel,
-    priority,
-    setPriority,
-    accessories,
-    setAccessories,
-    mood,
-    setMood,
-    adventurous,
     setAdventurous,
-    focus,
-    setFocus,
-    detailing,
-    setDetailing
+    setFocus
 }) => {
     return (
-        <div className="questions">
-            <div className="question">
-                <label>What vibe do you want for your outfit?</label>
-                <select value={vibe} onChange={(e) => setVibe(e.target.value)}>
-                    <option value="">Select an option</option>
+        <div>
+            <div className="question-container">
+                <h3 className="question-title">What type of vibe are you aiming for today?</h3>
+                <select onChange={(e) => setVibe(e.target.value)} defaultValue="">
+                    <option value="" disabled>Select an option</option>
                     <option value="elegant">Elegant</option>
                     <option value="casual">Casual</option>
                     <option value="bohemian">Bohemian</option>
                     <option value="sporty">Sporty</option>
-                </select>
-            </div>
-
-            <div className="question">
-                <label>What is your comfort level?</label>
-                <select value={comfortLevel} onChange={(e) => setComfortLevel(e.target.value)}>
-                    <option value="">Select an option</option>
-                    <option value="comfortable">Comfortable</option>
-                    <option value="vibrant">Vibrant</option>
                     <option value="formal">Formal</option>
                 </select>
             </div>
 
-            <div className="question">
-                <label>What is your priority for the outfit?</label>
-                <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-                    <option value="">Select an option</option>
-                    <option value="style">Style</option>
-                    <option value="flexibility">Flexibility</option>
-                    <option value="functionality">Functionality</option>
+            <div className="question-container">
+                <h3 className="question-title">How would you describe your comfort level with colors and patterns?</h3>
+                <select onChange={(e) => setComfortLevel(e.target.value)} defaultValue="">
+                    <option value="" disabled>Select an option</option>
+                    <option value="minimal">Minimal - Stick to basics</option>
+                    <option value="moderate">Moderate - Some colors okay</option>
+                    <option value="adventurous">Adventurous - Bold choices welcome</option>
                 </select>
             </div>
 
-            <div className="question">
-                <label>What accessories do you want?</label>
-                <input
-                    type="text"
-                    value={accessories}
-                    onChange={(e) => setAccessories(e.target.value)}
-                    placeholder="Enter accessories (e.g., jewelry, bag)"
-                />
-            </div>
-
-            <div className="question">
-                <label>What mood do you want to convey?</label>
-                <select value={mood} onChange={(e) => setMood(e.target.value)}>
-                    <option value="">Select an option</option>
-                    <option value="classic">Classic</option>
-                    <option value="modern">Modern</option>
-                    <option value="playful">Playful</option>
+            <div className="question-container">
+                <h3 className="question-title">How adventurous do you want to be with this outfit?</h3>
+                <select onChange={(e) => setAdventurous(e.target.value)} defaultValue="">
+                    <option value="" disabled>Select an option</option>
+                    <option value="conservative">Conservative - Keep it safe</option>
+                    <option value="balanced">Balanced - Mix of safe and bold</option>
+                    <option value="daring">Daring - Push the boundaries</option>
                 </select>
             </div>
 
-            <div className="question">
-                <label>How adventurous are you with colors and patterns?</label>
-                <select value={adventurous} onChange={(e) => setAdventurous(e.target.value)}>
-                    <option value="">Select an option</option>
-                    <option value="neutral">Neutral</option>
-                    <option value="soft">Soft tones</option>
-                    <option value="bold">Bold colors</option>
-                </select>
-            </div>
-
-            <div className="question">
-                <label>What’s the main focus for your outfit?</label>
-                <select value={focus} onChange={(e) => setFocus(e.target.value)}>
-                    <option value="">Select an option</option>
-                    <option value="confidence">Confidence</option>
-                    <option value="comfort">Comfort</option>
-                    <option value="style">Style</option>
-                </select>
-            </div>
-
-            <div className="question">
-                <label>What kind of detailing do you prefer in your clothing?</label>
-                <select value={detailing} onChange={(e) => setDetailing(e.target.value)}>
-                    <option value="">Select an option</option>
-                    <option value="clean">Clean and simple</option>
-                    <option value="textured">Textured and rugged</option>
-                    <option value="tailored">Tailored and structured</option>
+            <div className="question-container">
+                <h3 className="question-title">What's the main focus you want for this outfit?</h3>
+                <select onChange={(e) => setFocus(e.target.value)} defaultValue="">
+                    <option value="" disabled>Select an option</option>
+                    <option value="overall">Overall Balance</option>
+                    <option value="statement">Statement Piece</option>
+                    <option value="layering">Layering</option>
+                    <option value="simplicity">Simplicity</option>
                 </select>
             </div>
         </div>

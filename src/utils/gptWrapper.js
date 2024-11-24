@@ -10,15 +10,15 @@ export const fetchOutfitData = async (prompt) => {
                 'Authorization': `Bearer ${OPENAI_API_KEY}`
             },
             body: JSON.stringify({
-                model: "gpt-4", // Specify the model you want to use
+                model: "gpt-4",
                 messages: [
                     {
                         role: "user",
                         content: prompt
                     }
                 ],
-                max_tokens: 300, // Adjust based on your needs
-                temperature: 0.7 // Adjust for creativity
+                max_tokens: 300,
+                temperature: 0.7
             })
         });
 
@@ -29,17 +29,44 @@ export const fetchOutfitData = async (prompt) => {
         }
 
         const data = await response.json();
-        const message = data.choices[0].message.content; // Extract the message content
+        const message = data.choices[0].message.content;
 
-        // Split the message into sections based on expected format
-        const sections = message.split('\n').filter(line => line.trim() !== '');
-        const title = sections[0] || "Generated Outfit"; // First line as title
-        const description = sections.slice(1).join('\n'); // Remaining lines as description
+        // Parse the components including the image description
+        const components = parseDescription(message);
+        
+        // Create a more detailed DALL-E prompt
+        let dallePrompt = "Failed to generate image description";
+        
+        if (components.shortTopDescription && components.shortBottomDescription) {
+            dallePrompt = `Create a photorealistic image of a slim asian male wearing a ${components.shortTopDescription} with ${components.shortBottomDescription}`;
+            
+            if (components.shortShoesDescription) {
+                dallePrompt += `, ${components.shortShoesDescription}`;
+            }
+            
+            if (components.shortAccessoryDescription) {
+                dallePrompt += `, and ${components.shortAccessoryDescription}`;
+            }
 
-        // Create a DALL-E prompt based on the description
-        const dallePrompt = `Create an image of ${description}`;
+            // Add setting if available
+            if (components.imageDescription) {
+                dallePrompt += `. ${components.imageDescription}`;
+            } else {
+                dallePrompt += `. The person is standing in a warm, well-lit room decorated for Thanksgiving.`;
+            }
 
-        return { title, description, dallePrompt };
+            // Add style guidance
+            dallePrompt += ` The image should be high quality, photorealistic, and well-lit.`;
+        }
+
+        console.log("Generated DALL-E Prompt:", dallePrompt); // Debug log
+
+        return {
+            title: components.title || "Generated Outfit",
+            description: message,
+            dallePrompt,
+            components  // Include parsed components in the return
+        };
     } catch (error) {
         console.error("Error in fetchOutfitData:", error);
         throw new Error('Failed to generate outfit data');
@@ -48,32 +75,37 @@ export const fetchOutfitData = async (prompt) => {
 
 // Function to generate an image using OpenAI's DALL-E model
 export const generateImage = async (prompt) => {
+    if (!prompt) {
+        throw new Error('Empty prompt provided to DALL-E');
+    }
+
     try {
+        console.log('DALL-E Prompt:', prompt); // Log the actual prompt
+
         const response = await fetch('https://api.openai.com/v1/images/generations', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
+                'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
             },
             body: JSON.stringify({
-                model: "dall-e-3", // Ensure this model is correct
                 prompt: prompt,
                 n: 1,
-                size: "1024x1024",
+                size: "1024x1024"
             })
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error("Error Response:", errorData);
-            throw new Error('DALL-E API call failed');
+            console.error('DALL-E API Error Response:', errorData);
+            throw new Error(`DALL-E API error: ${errorData.error?.message || 'Unknown error'}`);
         }
 
         const data = await response.json();
-        return data.data[0].url; // Return the URL of the generated image
+        return data.data[0].url;
     } catch (error) {
-        console.error("Error in generateImage:", error);
-        throw new Error('Failed to generate image');
+        console.error('Image generation error details:', error);
+        throw new Error('Failed to generate image: ' + error.message);
     }
 };
 
@@ -89,55 +121,61 @@ export const parseDescription = (description) => {
         shortShoesDescription: '',
         accessory: '',
         shortAccessoryDescription: '',
-        dallePrompt: ''
+        imageDescription: ''
     };
 
-    const lines = description.split('\n');
-
-    lines.forEach(line => {
-        if (line.trim() === '') return;
+    try {
+        const lines = description.split('\n').filter(line => line.trim());
         
-        const [key, ...valueParts] = line.split(':');
-        const value = valueParts.join(':').trim();
-        
-        switch (key.trim().toLowerCase()) {
-            case 'title':
-                components.title = value;
-                break;
-            case 'top':
-                components.top = value;
-                break;
-            case 'short top description':
-                components.shortTopDescription = value;
-                break;
-            case 'bottom':
-                components.bottom = value;
-                break;
-            case 'short bottom description':
-                components.shortBottomDescription = value;
-                break;
-            case 'shoes':
-                components.shoes = value;
-                break;
-            case 'short shoes description':
-                components.shortShoesDescription = value;
-                break;
-            case 'accessory':
-                components.accessory = value;
-                break;
-            case 'short accessory description':
-                components.shortAccessoryDescription = value;
-                break;
-            case 'dall-e prompt':
-            case 'image description':  // Added to handle both formats
-                components.dallePrompt = value;
-                break;
-            default:
-                // Handle any unmatched keys
-                console.log(`Unhandled key in description: ${key}`);
-                break;
-        }
-    });
+        lines.forEach(line => {
+            // Updated regex to better handle the numbered format
+            const match = line.match(/^(\d+)\.\s*(.*?):\s*(.*)$/i);
+            if (!match) return;
 
-    return components;
+            const [, , type, content] = match;
+            const cleanType = type.toLowerCase().trim();
+            const cleanContent = content.trim().replace(/['"]/g, '');
+
+            switch(cleanType) {
+                case 'title':
+                    components.title = cleanContent;
+                    break;
+                case 'top':
+                    components.top = cleanContent;
+                    break;
+                case 'short top description':
+                    components.shortTopDescription = cleanContent;
+                    break;
+                case 'bottom':
+                    components.bottom = cleanContent;
+                    break;
+                case 'short bottom description':
+                    components.shortBottomDescription = cleanContent;
+                    break;
+                case 'shoes':
+                    components.shoes = cleanContent;
+                    break;
+                case 'short shoes description':
+                    components.shortShoesDescription = cleanContent;
+                    break;
+                case 'accessory':
+                    components.accessory = cleanContent;
+                    break;
+                case 'short accessory description':
+                    components.shortAccessoryDescription = cleanContent;
+                    break;
+                case 'image description':
+                    components.imageDescription = cleanContent;
+                    break;
+                default:
+                    console.log(`Unhandled content type: ${cleanType}`);
+                    break;
+            }
+        });
+
+        return components;
+    } catch (error) {
+        console.error('Error parsing description:', error);
+        return components;
+    }
 };
