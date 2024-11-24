@@ -31,9 +31,9 @@ export const useOutfitGeneration = () => {
         setIsOutfitVisible(false);
 
         try {
-            const prompt = `You are a highly creative personal stylist and AI specializing in crafting relatable, modern, and cohesive outfits tailored to user input. Your goal is to generate outfit recommendations that not only describe the clothing but also place the wearer in a casual and engaging setting, making it easy for them to imagine themselves wearing the outfit.
+            const prompt = `You are a personal stylist creating a modern, cohesive outfit. Keep descriptions brief and focused.
 
-The user's input includes:
+User Details:
 • Gender: ${gender || "Not specified"}
 • Ethnicity: ${ethnicity || "Not specified"}
 • Body Type: ${bodyType || "Not specified"}
@@ -45,22 +45,23 @@ The user's input includes:
 • Focus: ${focus || "Not specified"}
 • Additional Description: ${userInput || "None"}
 
-Using this information, generate an outfit description that includes:
-1. Title: A creative name that reflects the vibe and mood of the outfit
-2. Top: A detailed description of the main top piece
-3. Short Top Description: A concise, shopping-friendly description
-4. Bottom: A detailed description of the main bottom piece
-5. Short Bottom Description: A concise, shopping-friendly description
-6. Shoes: A detailed description of the shoes
-7. Short Shoes Description: A concise, shopping-friendly description
-8. Accessory: A description of an accessory that enhances the outfit
-9. Short Accessory Description: A concise, shopping-friendly description
-10. Image Description: A clear, vivid scene where the outfit is worn
+Generate a concise outfit description with:
+1. Title: A brief, creative name for the outfit
+2. Top: A short description of the top piece (1 sentence)
+3. Short Top Description: A very brief, shopping-friendly description (5-7 words)
+4. Bottom: A short description of the bottom piece (1 sentence)
+5. Short Bottom Description: A very brief, shopping-friendly description (5-7 words)
+6. Shoes: A short description of the footwear (1 sentence)
+7. Short Shoes Description: A very brief, shopping-friendly description (5-7 words)
+8. Accessory: A short description of one accessory (1 sentence)
+9. Short Accessory Description: A very brief, shopping-friendly description (5-7 words)
+10. Image Description: Create a casual, lifestyle scene (3-4 sentences):
+    - Describe a person wearing the outfit in a natural setting
+    - Include relevant background details (coffee shop, park, etc.)
+    - Focus on how the outfit works with the environment
+    - Keep the style casual and relatable
 
-Key Focus:
-• Create a casual and relatable setting tailored to the user's preferences
-• Ensure the descriptions feel personal, as if the outfit was designed specifically for them
-• Make the visual scene engaging and lifestyle-focused`;
+Keep descriptions concise and focus on creating a cohesive, practical outfit that matches the user's preferences.`;
 
             console.log("Prompt being sent to API:", prompt);
             

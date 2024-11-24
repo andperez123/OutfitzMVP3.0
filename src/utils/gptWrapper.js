@@ -29,43 +29,34 @@ export const fetchOutfitData = async (prompt) => {
         }
 
         const data = await response.json();
-        const message = data.choices[0].message.content;
+        console.log("Raw API Response:", data);
+        console.log("Message Content:", data.choices[0].message.content);
 
-        // Parse the components including the image description
+        const message = data.choices[0].message.content;
         const components = parseDescription(message);
         
-        // Create a more detailed DALL-E prompt
-        let dallePrompt = "Failed to generate image description";
+        // Debug logs
+        console.log("Parsed Components:", components);
+        console.log("Image Description:", components.imageDescription);
+
+        // Create DALL-E prompt
+        let dallePrompt = "";
         
-        if (components.shortTopDescription && components.shortBottomDescription) {
-            dallePrompt = `Create a photorealistic image of a slim asian male wearing a ${components.shortTopDescription} with ${components.shortBottomDescription}`;
-            
-            if (components.shortShoesDescription) {
-                dallePrompt += `, ${components.shortShoesDescription}`;
-            }
-            
-            if (components.shortAccessoryDescription) {
-                dallePrompt += `, and ${components.shortAccessoryDescription}`;
-            }
-
-            // Add setting if available
-            if (components.imageDescription) {
-                dallePrompt += `. ${components.imageDescription}`;
-            } else {
-                dallePrompt += `. The person is standing in a warm, well-lit room decorated for Thanksgiving.`;
-            }
-
-            // Add style guidance
+        if (components.imageDescription) {
+            dallePrompt = `Create a photorealistic image of ${components.imageDescription}`;
             dallePrompt += ` The image should be high quality, photorealistic, and well-lit.`;
+        } else {
+            console.error("No image description found in components");
+            dallePrompt = "Failed to generate image description";
         }
 
-        console.log("Generated DALL-E Prompt:", dallePrompt); // Debug log
+        console.log("Generated DALL-E Prompt:", dallePrompt);
 
         return {
             title: components.title || "Generated Outfit",
             description: message,
             dallePrompt,
-            components  // Include parsed components in the return
+            components
         };
     } catch (error) {
         console.error("Error in fetchOutfitData:", error);
@@ -80,7 +71,7 @@ export const generateImage = async (prompt) => {
     }
 
     try {
-        console.log('DALL-E Prompt:', prompt); // Log the actual prompt
+        console.log('DALL-E Prompt:', prompt);
 
         const response = await fetch('https://api.openai.com/v1/images/generations', {
             method: 'POST',
@@ -89,9 +80,11 @@ export const generateImage = async (prompt) => {
                 'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`
             },
             body: JSON.stringify({
+                model: "dall-e-3",
                 prompt: prompt,
                 n: 1,
-                size: "1024x1024"
+                size: "1024x1024",
+                quality: "standard"
             })
         });
 
@@ -127,8 +120,20 @@ export const parseDescription = (description) => {
     try {
         const lines = description.split('\n').filter(line => line.trim());
         
+        // First try to find the image description section as a whole
+        const imageDescStart = description.indexOf('10. Image Description:');
+        if (imageDescStart !== -1) {
+            // Find the next number or end of text
+            const nextSection = description.indexOf('11.', imageDescStart);
+            const imageDesc = description.slice(
+                imageDescStart + '10. Image Description:'.length,
+                nextSection !== -1 ? nextSection : undefined
+            ).trim();
+            components.imageDescription = imageDesc;
+        }
+
+        // Parse other components as before
         lines.forEach(line => {
-            // Updated regex to better handle the numbered format
             const match = line.match(/^(\d+)\.\s*(.*?):\s*(.*)$/i);
             if (!match) return;
 
@@ -164,11 +169,7 @@ export const parseDescription = (description) => {
                 case 'short accessory description':
                     components.shortAccessoryDescription = cleanContent;
                     break;
-                case 'image description':
-                    components.imageDescription = cleanContent;
-                    break;
                 default:
-                    console.log(`Unhandled content type: ${cleanType}`);
                     break;
             }
         });
