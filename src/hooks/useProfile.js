@@ -25,6 +25,7 @@ export const useProfile = () => {
                 setUser(result.user);
                 
                 await setDoc(doc(db, 'userProfiles', result.user.uid), {
+                    email: result.user.email,
                     bodyType,
                     ethnicity,
                     height,
@@ -46,6 +47,7 @@ export const useProfile = () => {
         
         try {
             await setDoc(doc(db, 'userProfiles', user.uid), {
+                email: user.email,
                 bodyType,
                 ethnicity,
                 height,
