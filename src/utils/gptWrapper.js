@@ -70,8 +70,15 @@ export const generateImage = async (prompt) => {
         throw new Error('Empty prompt provided to DALL-E');
     }
 
+    // Add API key check
+    if (!process.env.REACT_APP_OPENAI_API_KEY) {
+        console.error('OpenAI API key is missing');
+        throw new Error('OpenAI API key is not configured');
+    }
+
     try {
-        console.log('DALL-E Prompt:', prompt);
+        console.log('Starting DALL-E image generation...');
+        console.log('API Key present:', !!process.env.REACT_APP_OPENAI_API_KEY);
 
         const response = await fetch('https://api.openai.com/v1/images/generations', {
             method: 'POST',
@@ -88,6 +95,9 @@ export const generateImage = async (prompt) => {
             })
         });
 
+        // Log the response status
+        console.log('DALL-E API Response Status:', response.status);
+
         if (!response.ok) {
             const errorData = await response.json();
             console.error('DALL-E API Error Response:', errorData);
@@ -95,6 +105,12 @@ export const generateImage = async (prompt) => {
         }
 
         const data = await response.json();
+        console.log('DALL-E API Success Response:', data);
+
+        if (!data.data?.[0]?.url) {
+            throw new Error('No image URL in DALL-E response');
+        }
+
         return data.data[0].url;
     } catch (error) {
         console.error('Image generation error details:', error);

@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
 import './StyleGrid.css';
+import { useOutfitGeneration } from '../hooks/useOutfitGeneration';
+import OutfitModal from './OutfitModal';
+import ErrorBoundary from './ErrorBoundary';
 
 const StyleGrid = () => {
   const [gender, setGender] = useState('all');
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [outfitDescription, setOutfitDescription] = useState('');
+
+  const {
+    isLoading,
+    error,
+    generatedOutfit,
+    isOutfitVisible,
+    handleSubmit: handleOutfitSubmit,
+    handleCloseModal
+  } = useOutfitGeneration();
 
   const styles = [
     // Women Styles
@@ -167,12 +179,19 @@ const StyleGrid = () => {
       alert('Please enter a description for your outfit');
       return;
     }
-    console.log('Submitting:', {
-      style: selectedStyle.style,
+
+    handleOutfitSubmit({
       gender: selectedStyle.gender,
-      description: outfitDescription
+      bodyType: '',
+      ethnicity: '',
+      height: '',
+      hairType: '',
+      vibe: selectedStyle.style,
+      comfortLevel: '',
+      adventurous: '',
+      focus: '',
+      userInput: outfitDescription
     });
-    // Add your outfit generation logic here
   };
 
   return (
@@ -188,9 +207,23 @@ const StyleGrid = () => {
               rows="4"
               required
             />
-            <button type="submit">Generate Outfit</button>
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? 'Generating...' : 'Generate Outfit'}
+            </button>
           </form>
         </div>
+      )}
+
+      {error && <div className="alert">{error}</div>}
+
+      {isOutfitVisible && generatedOutfit && (
+        <ErrorBoundary>
+          <OutfitModal 
+            generatedOutfit={generatedOutfit}
+            handleCloseModal={handleCloseModal}
+            gender={selectedStyle?.gender}
+          />
+        </ErrorBoundary>
       )}
 
       <div className="gender-filter">
