@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
 import './StyleGrid.css';
 import { useOutfitGeneration } from '../hooks/useOutfitGeneration';
+import { useProfile } from '../hooks/useProfile';
+import { auth } from '../firebase-config';
 import OutfitModal from './OutfitModal';
 import ErrorBoundary from './ErrorBoundary';
+import OutfitGenerator from './OutfitGenerator';
 
 const StyleGrid = () => {
   const [gender, setGender] = useState('all');
   const [selectedStyle, setSelectedStyle] = useState(null);
   const [outfitDescription, setOutfitDescription] = useState('');
+  const [showCustomizer, setShowCustomizer] = useState(false);
+
+  const {
+    user,
+    handleGoogleSignIn
+  } = useProfile();
 
   const {
     isLoading,
@@ -194,37 +203,53 @@ const StyleGrid = () => {
     });
   };
 
+  const handleCustomizeClick = () => {
+    setShowCustomizer(true);
+  };
+
+  const handleCloseCustomizer = () => {
+    setShowCustomizer(false);
+  };
+
   return (
     <div className="style-container">
-      {selectedStyle && (
-        <div className="description-form">
-          <h3>Describe your outfit based on {selectedStyle.style} style:</h3>
-          <form onSubmit={handleSubmit}>
-            <textarea
-              value={outfitDescription}
-              onChange={(e) => setOutfitDescription(e.target.value)}
-              placeholder="Describe how you want your outfit to look..."
-              rows="4"
-              required
+      <div className="auth-container">
+        {user ? (
+          <div className="user-profile">
+            <img 
+              src={user.photoURL} 
+              alt="Profile" 
+              className="profile-image"
             />
-            <button type="submit" disabled={isLoading}>
-              {isLoading ? 'Generating...' : 'Generate Outfit'}
-            </button>
-          </form>
-        </div>
-      )}
+            <div className="user-info">
+              <span className="user-name">{user.displayName}</span>
+              <button 
+                className="logout-button"
+                onClick={() => auth.signOut()}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button 
+            className="login-button"
+            onClick={handleGoogleSignIn}
+          >
+            <img 
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+              alt="Google" 
+              className="google-icon"
+            />
+            Sign in with Google
+          </button>
+        )}
+      </div>
 
-      {error && <div className="alert">{error}</div>}
-
-      {isOutfitVisible && generatedOutfit && (
-        <ErrorBoundary>
-          <OutfitModal 
-            generatedOutfit={generatedOutfit}
-            handleCloseModal={handleCloseModal}
-            gender={selectedStyle?.gender}
-          />
-        </ErrorBoundary>
-      )}
+      <div className="header-section">
+        <h1 className="header-title">Outfitz ✨</h1>
+        <p className="header-subtitle">Your personal stylist</p>
+      </div>
 
       <div className="gender-filter">
         <button 
@@ -248,66 +273,198 @@ const StyleGrid = () => {
       </div>
       
       <div className="styles-layout">
-        <div className="styles-column female-styles">
-          <h2>Women's Styles</h2>
-          <div className="style-grid">
-            {styles
-              .filter(style => style.gender === 'female')
-              .map(style => (
-                <div 
-                  key={style.id} 
-                  className={`style-item ${selectedStyle?.id === style.id ? 'selected' : ''}`}
-                  onClick={() => handleStyleSelect(style)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <img 
-                    src={style.image} 
-                    alt={style.style}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/images/placeholder.png';
-                    }}
-                  />
-                  <div className="style-info">
-                    <h3>{style.style}</h3>
-                    <p>{style.description}</p>
+        {gender === 'all' ? (
+          <>
+            <div className="styles-column">
+              <h2>Women's Styles</h2>
+              <div className="style-grid">
+                {styles.filter(style => style.gender === 'female').map(style => (
+                  <React.Fragment key={style.id}>
+                    <div 
+                      className={`style-item ${selectedStyle?.id === style.id ? 'selected' : ''}`}
+                      onClick={() => handleStyleSelect(style)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <img 
+                        src={style.image} 
+                        alt={style.style}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/images/placeholder.png';
+                        }}
+                      />
+                      <div className="style-info">
+                        <h3>{style.style}</h3>
+                        <p>{style.description}</p>
+                      </div>
+                    </div>
+                    {selectedStyle?.id === style.id && (
+                      <div className="description-form-container">
+                        <div className="description-form">
+                          <h3>Describe your outfit based on {style.style} style:</h3>
+                          <form onSubmit={handleSubmit}>
+                            <textarea
+                              value={outfitDescription}
+                              onChange={(e) => setOutfitDescription(e.target.value)}
+                              placeholder="Describe how you want your outfit to look..."
+                              rows="4"
+                              required
+                            />
+                            <div className="form-buttons">
+                              <button 
+                                type="button" 
+                                className="customize-button"
+                                onClick={handleCustomizeClick}
+                              >
+                                Customize
+                              </button>
+                              <button type="submit" disabled={isLoading}>
+                                {isLoading ? 'Generating...' : 'Generate Outfit'}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+            <div className="styles-column">
+              <h2>Men's Styles</h2>
+              <div className="style-grid">
+                {styles.filter(style => style.gender === 'male').map(style => (
+                  <React.Fragment key={style.id}>
+                    <div 
+                      className={`style-item ${selectedStyle?.id === style.id ? 'selected' : ''}`}
+                      onClick={() => handleStyleSelect(style)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <img 
+                        src={style.image} 
+                        alt={style.style}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/images/placeholder.png';
+                        }}
+                      />
+                      <div className="style-info">
+                        <h3>{style.style}</h3>
+                        <p>{style.description}</p>
+                      </div>
+                    </div>
+                    {selectedStyle?.id === style.id && (
+                      <div className="description-form-container">
+                        <div className="description-form">
+                          <h3>Describe your outfit based on {style.style} style:</h3>
+                          <form onSubmit={handleSubmit}>
+                            <textarea
+                              value={outfitDescription}
+                              onChange={(e) => setOutfitDescription(e.target.value)}
+                              placeholder="Describe how you want your outfit to look..."
+                              rows="4"
+                              required
+                            />
+                            <div className="form-buttons">
+                              <button 
+                                type="button" 
+                                className="customize-button"
+                                onClick={handleCustomizeClick}
+                              >
+                                Customize
+                              </button>
+                              <button type="submit" disabled={isLoading}>
+                                {isLoading ? 'Generating...' : 'Generate Outfit'}
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="styles-column">
+            <h2>{gender === 'male' ? "Men's Styles" : "Women's Styles"}</h2>
+            <div className="style-grid">
+              {filteredStyles.map(style => (
+                <React.Fragment key={style.id}>
+                  <div 
+                    className={`style-item ${selectedStyle?.id === style.id ? 'selected' : ''}`}
+                    onClick={() => handleStyleSelect(style)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <img 
+                      src={style.image} 
+                      alt={style.style}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/images/placeholder.png';
+                      }}
+                    />
+                    <div className="style-info">
+                      <h3>{style.style}</h3>
+                      <p>{style.description}</p>
+                    </div>
                   </div>
-                </div>
+                  {selectedStyle?.id === style.id && (
+                    <div className="description-form-container">
+                      <div className="description-form">
+                        <h3>Describe your outfit based on {style.style} style:</h3>
+                        <form onSubmit={handleSubmit}>
+                          <textarea
+                            value={outfitDescription}
+                            onChange={(e) => setOutfitDescription(e.target.value)}
+                            placeholder="Describe how you want your outfit to look..."
+                            rows="4"
+                            required
+                          />
+                          <div className="form-buttons">
+                            <button 
+                              type="button" 
+                              className="customize-button"
+                              onClick={handleCustomizeClick}
+                            >
+                              Customize
+                            </button>
+                            <button type="submit" disabled={isLoading}>
+                              {isLoading ? 'Generating...' : 'Generate Outfit'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
+            </div>
           </div>
-        </div>
-
-        <div className="styles-column male-styles">
-          <h2>Men's Styles</h2>
-          <div className="style-grid">
-            {styles
-              .filter(style => style.gender === 'male')
-              .map(style => (
-                <div 
-                  key={style.id} 
-                  className={`style-item ${selectedStyle?.id === style.id ? 'selected' : ''}`}
-                  onClick={() => handleStyleSelect(style)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <img 
-                    src={style.image} 
-                    alt={style.style}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/images/placeholder.png';
-                    }}
-                  />
-                  <div className="style-info">
-                    <h3>{style.style}</h3>
-                    <p>{style.description}</p>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
+        )}
       </div>
+
+      {error && <div className="alert">{error}</div>}
+
+      {isOutfitVisible && generatedOutfit && (
+        <ErrorBoundary>
+          <OutfitModal 
+            generatedOutfit={generatedOutfit}
+            handleCloseModal={handleCloseModal}
+            gender={selectedStyle?.gender}
+          />
+        </ErrorBoundary>
+      )}
+
+      {showCustomizer && (
+        <div className="customizer-modal">
+          <OutfitGenerator onClose={handleCloseCustomizer} />
+        </div>
+      )}
     </div>
   );
 };

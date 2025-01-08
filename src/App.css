@@ -1,5 +1,10 @@
 .App {
-  text-align: center;
+  position: relative;
+  min-height: 100vh;
+}
+
+main {
+  padding-top: 80px; /* Make room for the auth header */
 }
 
 .App-logo {

@@ -31,7 +31,7 @@ class ErrorBoundary extends React.Component {
     }
 }
 
-const OutfitGenerator = () => {
+const OutfitGenerator = ({ onClose }) => {
     // Form state
     const [gender, setGender] = useState('');
     const [vibe, setVibe] = useState('');
@@ -84,8 +84,14 @@ const OutfitGenerator = () => {
     };
 
     return (
-        <div className="container">
-            <div className="auth-container">
+        <div className="outfit-generator">
+            <button 
+                className="close-button"
+                onClick={onClose}
+            >
+                ×
+            </button>
+            <div className="google-sign-in">
                 {user ? (
                     <div className="user-profile">
                         <img 
@@ -117,108 +123,111 @@ const OutfitGenerator = () => {
                     </button>
                 )}
             </div>
-
-            <div className="header">
-                <h1 className="title">Outfitz <span role="img" aria-label="sparkle">✨</span></h1>
-                <p className="subtitle">Enter your style for any occasion and generate an outfit.</p>
-            </div>
-
-            <form onSubmit={onSubmit}>
-                <div className="gender-selection">
-                    <label className="radio-label">
-                        <input
-                            type="radio"
-                            name="gender"
-                            value="male"
-                            checked={gender === 'male'}
-                            onChange={(e) => setGender(e.target.value)}
-                        />
-                        Male
-                    </label>
-                    <label className="radio-label">
-                        <input
-                            type="radio"
-                            name="gender"
-                            value="female"
-                            checked={gender === 'female'}
-                            onChange={(e) => setGender(e.target.value)}
-                        />
-                        Female
-                    </label>
-                </div>
-
-                {gender && (
-                    <div className="questions-container animate-in">
-                        <PhysicalAttributes
-                            bodyType={bodyType}
-                            setBodyType={setBodyType}
-                            ethnicity={ethnicity}
-                            setEthnicity={setEthnicity}
-                            height={height}
-                            setHeight={setHeight}
-                            hairType={hairType}
-                            setHairType={setHairType}
-                            user={user}
-                            onSaveProfile={saveUserProfile}
-                            isProfileSaved={isProfileSaved}
-                            handleGoogleSignIn={handleGoogleSignIn}
-                        />
-
-                        {/* Separator between sections */}
-                        <div className="section-divider"></div>
-
-                        {/* Style Questions Second */}
-                        <div className="style-questions-section">
-                            <h2>Style Preferences</h2>
-                            {gender === 'male' && (
-                                <MaleQuestions 
-                                    setVibe={setVibe}
-                                    setComfortLevel={setComfortLevel}
-                                    setAdventurous={setAdventurous}
-                                    setFocus={setFocus}
-                                />
-                            )}
-                            {gender === 'female' && (
-                                <FemaleQuestions 
-                                    setVibe={setVibe}
-                                    setComfortLevel={setComfortLevel}
-                                    setAdventurous={setAdventurous}
-                                    setFocus={setFocus}
-                                />
-                            )}
-                        </div>
-
-                        {/* Rest of your content */}
-                        <textarea
-                            className="textarea"
-                            placeholder="Describe the outfit you want"
-                            value={userInput}
-                            onChange={(e) => setUserInput(e.target.value)}
-                        />
-
-                        <button 
-                            type="submit" 
-                            className="generate-button" 
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Generating...' : 'Generate Outfit'}
-                        </button>
-
+            <div className="container">
+                <div className="auth-container">
+                    <div className="header">
+                        <h1 className="title">Outfitz <span role="img" aria-label="sparkle">✨</span></h1>
+                        <p className="subtitle">Enter your style for any occasion and generate an outfit.</p>
                     </div>
-                )}
-            </form>
 
-            {error && <div className="alert">{error}</div>}
+                <form onSubmit={onSubmit}>
+                    <div className="gender-selection">
+                        <label className="radio-label">
+                            <input
+                                type="radio"
+                                name="gender"
+                                value="male"
+                                checked={gender === 'male'}
+                                onChange={(e) => setGender(e.target.value)}
+                            />
+                            Male
+                        </label>
+                        <label className="radio-label">
+                            <input
+                                type="radio"
+                                name="gender"
+                                value="female"
+                                checked={gender === 'female'}
+                                onChange={(e) => setGender(e.target.value)}
+                            />
+                            Female
+                        </label>
+                    </div>
 
-            {isOutfitVisible && generatedOutfit && (
-                <ErrorBoundary>
-                    <OutfitModal 
-                        generatedOutfit={generatedOutfit}
-                        handleCloseModal={handleCloseModal}
-                        gender={gender}
-                    />
-                </ErrorBoundary>
-            )}
+                        {gender && (
+                            <div className="questions-container animate-in">
+                                <PhysicalAttributes
+                                    bodyType={bodyType}
+                                    setBodyType={setBodyType}
+                                    ethnicity={ethnicity}
+                                    setEthnicity={setEthnicity}
+                                    height={height}
+                                    setHeight={setHeight}
+                                    hairType={hairType}
+                                    setHairType={setHairType}
+                                    user={user}
+                                    onSaveProfile={saveUserProfile}
+                                    isProfileSaved={isProfileSaved}
+                                    handleGoogleSignIn={handleGoogleSignIn}
+                                />
+
+                                {/* Separator between sections */}
+                                <div className="section-divider"></div>
+
+                                {/* Style Questions Second */}
+                                <div className="style-questions-section">
+                                    <h2>Style Preferences</h2>
+                                    {gender === 'male' && (
+                                        <MaleQuestions 
+                                            setVibe={setVibe}
+                                            setComfortLevel={setComfortLevel}
+                                            setAdventurous={setAdventurous}
+                                            setFocus={setFocus}
+                                        />
+                                    )}
+                                    {gender === 'female' && (
+                                        <FemaleQuestions 
+                                            setVibe={setVibe}
+                                            setComfortLevel={setComfortLevel}
+                                            setAdventurous={setAdventurous}
+                                            setFocus={setFocus}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Rest of your content */}
+                                <textarea
+                                    className="textarea"
+                                    placeholder="Describe the outfit you want"
+                                    value={userInput}
+                                    onChange={(e) => setUserInput(e.target.value)}
+                                />
+
+                                <button 
+                                    type="submit" 
+                                    className="generate-button" 
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? 'Generating...' : 'Generate Outfit'}
+                                </button>
+
+                            </div>
+                        )}
+                    </form>
+
+                    {error && <div className="alert">{error}</div>}
+
+                    {isOutfitVisible && generatedOutfit && (
+                        <ErrorBoundary>
+                            <OutfitModal 
+                                generatedOutfit={generatedOutfit}
+                                handleCloseModal={handleCloseModal}
+                                gender={gender}
+                            />
+                        </ErrorBoundary>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
