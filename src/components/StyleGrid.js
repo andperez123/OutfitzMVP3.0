@@ -272,7 +272,7 @@ const StyleGrid = () => {
         </button>
       </div>
       
-      <div className="styles-layout">
+      <div className={`styles-layout ${gender !== 'all' ? 'single-gender' : ''}`}>
         {gender === 'all' ? (
           <>
             <div className="styles-column">
